@@ -1,0 +1,3 @@
+model,accuracy,precision
+decision_tree,0.5425,0.5444141689373297
+always_up,0.539,0.539
