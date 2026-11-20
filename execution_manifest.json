@@ -1,0 +1,31 @@
+{
+  "python": "3.12.14",
+  "data_end_exclusive": "2026-01-01",
+  "packages": {
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "matplotlib": "3.10.8",
+    "yfinance": "0.2.66",
+    "scikit-learn": "1.8.0"
+  },
+  "files": {
+    "benchmark_history.csv": "ee29111ce1ba5dc27506b9ac2ce01d7ce55518a533ce1fcfb85d5d2406e65913",
+    "correlations.png": "310c96c23da6b442886ae93c817ad88d8d7aada9eb4b97e22b714d269060d64d",
+    "data_availability.csv": "e8d0d624ab76344465230bb0a12c5ab18ed12b2a653b612718c17f2fdcdb4c67",
+    "drawdown_comparison.png": "ed033f551e87cb752952bde208ff9962619da10d219934190165d45a897153cc",
+    "equity_comparison.png": "1604b14d7263848f8def5927977f938dd148792b734f9180edd3226cce6c6c31",
+    "feature_importance.csv": "a526cbf0fbfc792d529215c0f877fef18285e8ba6d41b1ba5fa1ee09938e8871",
+    "feature_target_correlations_development.csv": "85d2a79e1fd75f8bfddf1def7e1bf0807b74185da8a819a8a92c61a794232c2d",
+    "independent_trade_simulation.csv": "95de70d7ee3383e396d1079b3997c52f1dfbe680744a920094b1423230f6aba2",
+    "independent_trade_summary.csv": "1117051ce4dda33c9078107604b8ee3609b5e84e85d0c4145d3cc305363e4fbf",
+    "latest_signals.csv": "1ccf77dfb84d4d1f8010aa2dc6f599265daaeb5d9a255c5f0fd8fee089dc9a27",
+    "normalized_prices.png": "6cfa23f826f76b3f49f126adab68e8dd825346cf250b6cffcbc5a5b9c582a84f",
+    "portfolio_metrics.csv": "f8c858dd7d58fd5268f976f490e3d2b5f29dab5efa903a4c3c69a54a871d203b",
+    "return_correlations.csv": "9c2dbf46b8b2ac74ecf03e84a1e7ef821940ff19f4bcaabd87e37917e1e2905d",
+    "return_summary.csv": "f87c2ea8fb77e88362f1dc85500a6968ec0f6e2518b2bcb99cf682133c7ba10b",
+    "strategy_history.csv": "a3eae3797170c9f46cd7a17675c6ffc97fa909f8f8e71710a1676621b30889f2",
+    "target_by_ticker_development.csv": "9546584f3111e553b3b48dbf8d02ee6b01fb2f9800aadaee02c94478478753dc",
+    "test_metrics.csv": "4cc19513930e2e3d8c9eb2212c6e0efb5a66d098f1f06ff527ddd08b0b95937a",
+    "validation_metrics.csv": "ebc87890332f0a411a5baaac522428065cabac8715d3b20884a8bf590025d33c"
+  }
+}
