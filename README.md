@@ -1,105 +1,108 @@
-# Selección de ETFs con un modelo de clasificación
+# ETF selection with a classification model
 
-Quise revisar si un modelo podía ayudarme a seleccionar ETFs y cómo se comparaba esa selección con repartir el capital entre todos por igual. También revisé las caídas y lo que se pierde en comisiones.
+I wanted to see whether a model could help me select ETFs and how that would compare with dividing capital equally across all of them. I also looked at drawdowns and trading costs.
 
-## Datos
+## Data
 
-- Fuente: Yahoo Finance mediante yfinance; precios diarios ajustados.
-- Periodo: 2010-01-04 a 2025-12-31. La fecha final solicitada es 2026-01-01, exclusiva.
-- Universo: SPY, QQQ, IWM, EFA, EEM, TLT, IEF y GLD.
-- 4,024 sesiones por ETF: 32,192 combinaciones fecha-activo antes de ventanas y etiquetas.
-- Sin faltantes ni fechas duplicadas en la descarga revisada.
-- Los ETF son una selección fija retrospectiva: no se estudia un universo histórico completo ni el sesgo de supervivencia.
+- Source: Yahoo Finance through yfinance, using adjusted daily prices.
+- Period: January 4, 2010 through December 31, 2025. The requested end date, January 1, 2026, is exclusive.
+- Universe: SPY, QQQ, IWM, EFA, EEM, TLT, IEF, and GLD.
+- 4,024 sessions per ETF: 32,192 date–asset observations before rolling windows and labels.
+- No missing prices or duplicate dates in the checked download.
+- The universe is a fixed retrospective selection, not a historical universe accounting for fund closures or survivorship bias.
 
-| Símbolo | Exposición general usada en el estudio |
+| Ticker | General exposure |
 |---|---|
-| SPY | Acciones estadounidenses de gran capitalización |
+| SPY | US large-cap equities |
 | QQQ | Nasdaq-100 |
-| IWM | Acciones estadounidenses de pequeña capitalización |
-| EFA | Acciones de mercados desarrollados fuera de EE. UU. y Canadá |
-| EEM | Acciones de mercados emergentes |
-| IEF | Bonos del Tesoro estadounidense de 7 a 10 años |
-| TLT | Bonos del Tesoro estadounidense de más de 20 años |
-| GLD | Oro |
+| IWM | US small-cap equities |
+| EFA | Developed-market equities outside the US and Canada |
+| EEM | Emerging-market equities |
+| IEF | US Treasury bonds with 7–10 year maturities |
+| TLT | US Treasury bonds with maturities above 20 years |
+| GLD | Gold |
 
-## Cómo lo trabajé
+## Method
 
-1. Revisé fechas, disponibilidad y precios.
-2. Calculé rendimientos, volatilidad y correlaciones.
-3. Generé ocho variables numéricas: rendimientos de 1, 5, 20 y 60 sesiones; volatilidad de 20; y precio relativo a las medias de 10, 20 y 60 sesiones. Agregué indicadores de ticker, mes y día de la semana.
-4. Definí una clasificación de rendimiento futuro positivo. Para una señal calculada en t, la entrada se supone al cierre de t+1 y la salida al cierre de t+2. Las variables futuras quedan fuera de los predictores.
-5. Comparé DecisionTreeClassifier (profundidad 4) y RandomForestClassifier (100 árboles, profundidad 5). Ambos usan un mínimo de 50 observaciones por hoja y semilla 42.
-6. Separé entrenamiento antes de 2020, validación 2020–2022 y test desde 2023. Excluí etiquetas que cruzan los límites. Elegí por accuracy de validación, con precision como desempate, y reentrené con desarrollo anterior a 2023.
-7. Usé un umbral fijo de probabilidad 0.55 para la simulación. No hay búsqueda de hiperparámetros ni optimización del umbral en este proyecto.
-8. Comparé operaciones vectorizadas independientes y una simulación secuencial con capital limitado.
+1. Check dates, availability, and prices.
+2. Calculate returns, volatility, and correlations.
+3. Create eight numerical features: returns over 1, 5, 20, and 60 sessions; 20-session volatility; and price relative to its 10-, 20-, and 60-session moving averages. Add ticker, month, and weekday dummies.
+4. Define a positive-return classification target. For a signal at the close of t, assume entry at the close of t+1 and exit at the close of t+2. Keep future outcomes out of the predictors.
+5. Compare DecisionTreeClassifier (depth 4) and RandomForestClassifier (100 trees, depth 5), both with at least 50 samples per leaf and random seed 42.
+6. Train before 2020, validate in 2020–2022, and test from 2023 onward. Exclude labels whose outcome dates cross split boundaries. Select by validation accuracy, using precision as a tie-breaker, and refit on development data available before 2023.
+7. Apply a fixed probability threshold of 0.55 in the trading simulation. This project does not include hyperparameter or threshold optimization.
+8. Compare a vectorized independent-trade simulation with a sequential simulation that tracks limited portfolio capital.
 
-## Supuestos de la simulación
+## Simulation assumptions
 
-- Capital inicial normalizado a 1; todas las magnitudes de inversión se expresan en la moneda de cotización, sin conversión a MXN.
-- Sin apalancamiento ni ventas en corto. Posiciones fraccionarias permitidas.
-- Cada señal positiva ocupa 1/8 del capital; el resto queda en efectivo sin intereses.
-- Referencia: los ocho ETFs con pesos iguales y rebalanceo diario.
-- Comisión/costo agregado del 0.1 % por lado sobre el cambio absoluto de pesos; es una aproximación y no una tarifa de un bróker específico. No se modela el deslizamiento por separado.
-- El capital se reinvierte. Se valora a mercado al final, sin liquidación final forzada.
-- Sharpe con tasa libre de riesgo cero y anualización de 252 sesiones; no se incluyen impuestos.
-- El modelo permanece fijo después de entrenarse con desarrollo. Las señales del cierre de 2025 son históricas.
+- Initial capital is normalized to 1. Assets share a USD quotation basis; there is no conversion to MXN.
+- No leverage or short selling. Fractional positions are allowed.
+- Each positive signal uses 1/8 of capital. Unallocated capital stays in cash without earning interest.
+- Benchmark: all eight ETFs, equally weighted and rebalanced daily.
+- Approximate cost of 0.1% per side, applied to absolute weight turnover. This is not a specific broker's fee schedule. Slippage is not modeled separately.
+- Capital gains are reinvested. Final holdings are marked to market without a forced final liquidation.
+- Sharpe assumes a zero risk-free rate; annualization uses 252 sessions. Taxes are excluded.
+- The model stays fixed after development training. Signals dated December 2025 are historical.
 
-## Resultados
+## Results
 
-El árbol fue el modelo elegido en validación. En test tuvo una accuracy de 54.25%, frente a 53.90% al predecir siempre una subida. La diferencia fue de 0.35 puntos porcentuales. Es una diferencia pequeña. No hice una prueba estadística para saber si se sostiene más allá de esta muestra. Además, las observaciones de varios ETFs en una misma fecha no son independientes.
 
-| Indicador | Modelo | Pesos iguales diarios |
+The decision tree was selected on validation. Its test accuracy was 54.25%, compared with 53.90% for always predicting a positive return. That is a difference of 0.35 percentage points. The gap is small. I did not run a statistical significance test to establish whether it holds beyond this sample. Observations from different ETFs on the same date are also not independent.
+
+| Metric | Model strategy | Daily equal weight |
 |---|---:|---:|
-| Rendimiento acumulado | 2.09% | 58.95% |
-| Rendimiento anual compuesto | 0.70% | 16.85% |
-| Volatilidad anualizada | 1.56% | 10.98% |
-| Caída máxima | -2.38% | -10.93% |
-| Sharpe (tasa 0 %) | 0.453 | 1.473 |
+| Total return | 2.09% | 58.95% |
+| Compound annual growth rate | 0.70% | 16.85% |
+| Annualized volatility | 1.56% | 10.98% |
+| Maximum drawdown | -2.38% | -10.93% |
+| Sharpe (risk-free rate = 0%) | 0.453 | 1.473 |
 
-En esta simulación, seleccionar ETFs con el modelo no mejoró el rendimiento frente a repartir el capital por igual. La estrategia ganó 2.09%, mientras que la referencia ganó 58.95%. El Sharpe también fue menor.
 
-La estrategia presentó una caída máxima menor, pero también invirtió menos capital porque dejaba posiciones en efectivo cuando no había señal. Por eso no puedo atribuir esa diferencia solamente a una mejor selección de activos. Para separar esos efectos habría que comparar portafolios con una proporción invertida similar.
+Selecting ETFs with the model did not improve returns in this simulation. The strategy gained 2.09%, while the equal-weight benchmark gained 58.95%. The strategy also had a lower Sharpe ratio.
 
-Lo que más me llamó la atención es que acertar un poco más no se tradujo en ganar más. También importan cuánto se gana o pierde en cada operación, los costos y cuánto capital permanece invertido.
+Its maximum drawdown was smaller, but it also invested less capital because allocations stayed in cash when there was no signal. I cannot attribute the smaller drawdown only to better ETF selection. A comparison with similar invested exposure would help separate these effects.
 
-Dejé los parámetros como estaban antes de revisar test. Si continúo con otras variables o con una frecuencia distinta de rebalanceo, necesitaré otro periodo de evaluación para no elegir las reglas que mejor se acomoden a estos resultados.
+What stood out to me was that getting slightly more predictions right did not lead to making more money. The size of each gain and loss, trading costs, and the amount of capital left in cash also matter.
 
-## Archivos
+I kept the parameters fixed after looking at test results. If I continue with other features or a different rebalancing frequency, I will need another evaluation period rather than choosing rules that fit these test results.
 
-| Archivo | Contenido |
+## Files
+
+| File | Contents |
 |---|---|
-| etf_portfolio_analysis.ipynb | Notebook ejecutado con explicación de cada etapa |
-| etf_project.py | Funciones y ejecución completa del análisis |
-| requirements.txt | Versiones del entorno de ejecución |
-| RESULTADOS.md | Lectura de resultados y gráficas |
-| results/ | Métricas, simulaciones, correlaciones, importancia y gráficas |
-| VERIFICACION.md | Comprobaciones realizadas y límites de reproducción |
+| etf_portfolio_analysis.ipynb | Executed notebook with explanations |
+| etf_project.py | Functions and full analysis workflow |
+| requirements.txt | Environment package versions |
+| RESULTADOS.md | Results discussion and plots |
+| VERIFICACION.md | Checks and reproduction limits |
+| results/ | Metrics, simulations, correlations, feature importance, and plots |
+| execution_manifest.json | Environment information and output checksums |
 
-## Reproducir
+## Reproduce
 
-El entorno de esta ejecución usó Python 3.12.14. Desde una terminal, dentro de esta carpeta:
+The recorded environment used Python 3.12.14. From the project folder:
 
 ```bash
 python -m venv .venv
 ```
 
-En Windows PowerShell, activa con `.venv\Scripts\Activate.ps1`. En Linux/macOS, usa `source .venv/bin/activate`. Después:
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. On Linux/macOS, use `source .venv/bin/activate`. Then run:
 
 ```bash
 python -m pip install -r requirements.txt
 python etf_project.py
 ```
 
-Para Colab, abre el notebook y ejecuta las celdas en orden. La celda `%%writefile` vuelve a crear el script. No es necesario subir los CSV originales de precios a GitHub: la descarga está incluida.
+In Colab, open the notebook and run the cells in order. The `%%writefile` cell recreates the script. Original price CSV files do not need to be uploaded to GitHub because downloading them is part of the workflow.
 
-Los CSV de results son salidas del análisis, no una base original de precios. El proveedor puede revisar los datos ajustados; una descarga posterior y otras versiones de bibliotecas pueden cambiar ligeramente los resultados. Por eso una nueva ejecución puede no dar exactamente las mismas cifras.
+The CSV files in results are analysis outputs, not the original price dataset. Yahoo may revise adjusted prices, and library versions can affect results, so later executions may differ slightly.
 
-## Límites
+## Limitations
 
-Ocho ETFs y una sola división temporal no bastan para demostrar una ventaja estable. La accuracy se mide con la clase del modelo y las operaciones con un umbral 0.55. No se hizo calibración de probabilidades, prueba de significancia, comparación de exposición igualada ni evaluación walk-forward. Las correlaciones históricas completas son descriptivas; la correlación de variables con el objetivo se calculó solamente en desarrollo. Las importancias del árbol no demuestran causalidad.
+Eight ETFs and one chronological split do not establish a stable trading advantage. Classification accuracy uses the model's predicted class, while trading uses a 0.55 threshold. There is no probability calibration, significance test, exposure-matched comparison, or walk-forward evaluation. Full-history return correlations are descriptive; feature–target correlations use development data only. Tree feature importance does not establish causality.
 
-## Relación con el curso
+## Course materials
 
-Adaptación de los materiales de [Analytics in Stock Markets Zoomcamp](https://github.com/DataTalksClub/stock-markets-analytics-zoomcamp): módulos 1–2 (datos y transformaciones), 3 (modelado), 4 (simulación) y 5 (scripts y automatización). El universo de ETFs, el horizonte y los parámetros corresponden a este proyecto.
+Adapted from [Analytics in Stock Markets Zoomcamp](https://github.com/DataTalksClub/stock-markets-analytics-zoomcamp): Modules 1–2 (data and transformations), 3 (modeling), 4 (simulation), and 5 (scripts and automation). The ETF universe, horizon, and parameter choices belong to this project.
 
-La descripción del proyecto del curso está en [projects](https://github.com/DataTalksClub/stock-markets-analytics-zoomcamp/tree/main/projects).
+The course project description is in [projects](https://github.com/DataTalksClub/stock-markets-analytics-zoomcamp/tree/main/projects).

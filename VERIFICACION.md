@@ -1,12 +1,13 @@
-# Verificación
+# Verification
 
-- Se revisaron el código y las salidas del cuaderno.
-- Se ejecutó el script completo con una descarga nueva.
-- Se ejecutaron las celdas del notebook de entrega en orden con IPython local, sin un kernel remoto de Colab; se omitió la instalación porque las dependencias ya estaban disponibles.
-- Pruebas con datos sintéticos: modificar el último precio no altera las variables anteriores; el objetivo corresponde al retorno de t+1 a t+2; con precios constantes y sin costos el capital no cambia; con una comisión inicial de 0.1 % el capital queda en 0.999 y no vuelve a disminuir si no hay rebalanceo; la caída inicial incluye ese costo.
-- Se revisaron los límites temporales del entrenamiento y la validación. No se incluyen objetivos futuros en las variables.
-- La accuracy del árbol en test se mantuvo en 54.25 % al repetir la ejecución. Los precios ajustados y el bosque pueden variar ligeramente en nuevas descargas; por eso los archivos finales se generaron juntos en la misma ejecución.
-- No se ajustaron modelos ni umbral para mejorar los resultados observados de test.
-- No se verificó el rendimiento con otra fuente de precios ni con operaciones reales.
+- Reviewed the code and notebook outputs.
+- Ran the full script using a fresh download.
+- Executed the notebook cells in order with local IPython, rather than a remote Colab kernel. Installation was skipped because dependencies were available.
+- Checked synthetic examples: changing the last price does not change earlier features; the target matches the return from t+1 to t+2; flat prices and zero costs leave capital unchanged; a 0.1% initial fee reduces capital to 0.999 without repeated fees if no rebalancing occurs; drawdown includes the initial cost.
+- Reviewed the training and validation boundaries. Future targets are not included among the predictors.
+- The decision tree test accuracy remained 54.25% on repeated execution. Adjusted prices and random forest results can change slightly across fresh downloads.
+- Model parameters and the threshold were not changed to improve observed test results.
+- The English version translates comments, explanations, table headers, and plot labels. The code structure and numerical portfolio outputs were preserved; model fitting was not repeated for this translation. Only the descriptive price plot required a new download.
+- Returns were not verified against another price provider or real trades.
 
-Estas comprobaciones revisan el funcionamiento del código; no prueban que la estrategia vaya a ser rentable en el futuro.
+These checks cover code behavior. They do not establish future profitability.

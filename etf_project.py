@@ -21,18 +21,18 @@ def download_prices(end="2026-01-01"):
     )
 
     if raw.empty:
-        raise ValueError("No se descargaron datos.")
+        raise ValueError("No data were downloaded.")
 
     prices = raw["Close"].reindex(columns=TICKERS).sort_index()
 
     if prices.isna().any().any():
-        raise ValueError("Hay precios faltantes. Revisar la descarga.")
+        raise ValueError("Missing prices found. Check the download.")
 
     if prices.index.duplicated().any():
-        raise ValueError("Hay fechas duplicadas.")
+        raise ValueError("Duplicate dates found.")
 
     if not np.isfinite(prices.to_numpy()).all() or (prices <= 0).any().any():
-        raise ValueError("Hay precios no válidos.")
+        raise ValueError("Invalid prices found.")
 
     return prices
 
@@ -47,7 +47,7 @@ def prepare_data(prices):
         df = pd.DataFrame(index=prices.index)
         df["Ticker"] = ticker
 
-        # Información disponible al cierre de cada fecha.
+        # Information available at the close of each session.
         for window in [1, 5, 20, 60]:
             df[f"return_{window}"] = p / p.shift(window) - 1
 
@@ -59,11 +59,11 @@ def prepare_data(prices):
         df["Month"] = prices.index.month.astype(str)
         df["Weekday"] = prices.index.dayofweek.astype(str)
 
-        # Señal al cierre de t.
-        # Compra al cierre de t+1 y venta al cierre de t+2.
+        # Signal at the close of t.
+        # Buy at the close of t+1 and sell at the close of t+2.
         df["future_return"] = p.shift(-2) / p.shift(-1) - 1
 
-        # Fecha en que conocemos el resultado de la operación.
+        # Date when the outcome of the trade becomes known.
         df["label_end"] = pd.Series(
             prices.index, index=prices.index
         ).shift(-2)
@@ -89,7 +89,7 @@ def prepare_data(prices):
     data = data.replace([np.inf, -np.inf], np.nan)
     data = data.dropna(subset=features).copy()
 
-    # Las últimas filas quedan sin etiqueta: sirven para inferencia.
+    # The last rows have no labels and are kept for inference.
     data["target"] = np.where(
         data["future_return"].notna(),
         (data["future_return"] > 0).astype(int),
@@ -107,8 +107,8 @@ def probability_up(model, X):
 def train_models(data, features):
     labeled = data.dropna(subset=["target", "label_end"]).copy()
 
-    # Separación cronológica y eliminación de etiquetas
-    # que crucen al siguiente periodo.
+    # Chronological split; exclude labels
+    # whose outcome dates cross into the next period.
     train = labeled[
         (labeled["Date"] < "2020-01-01")
         & (labeled["label_end"] < "2020-01-01")
@@ -153,7 +153,7 @@ def train_models(data, features):
 
     validation_results = pd.DataFrame(validation_results)
 
-    # Elegimos con validación, sin consultar el resultado de test.
+    # Select using validation, without looking at test results.
     best_name = validation_results.sort_values(
         ["accuracy", "precision"], ascending=False
     ).iloc[0]["model"]
@@ -172,7 +172,7 @@ def train_models(data, features):
 
     test_prediction = best_model.predict(test[features])
 
-    # Comparación sencilla: predecir siempre que subirá.
+    # Simple baseline: always predict a positive return.
     always_up = np.ones(len(test), dtype=int)
 
     test_results = pd.DataFrame([
@@ -203,9 +203,9 @@ def train_models(data, features):
 
 def simulate(prices, target_weights, cost_rate=0.001):
     """
-    Pesos al comienzo de cada intervalo cierre a cierre.
-    El capital no invertido permanece en efectivo sin intereses.
-    Costos aproximados sobre el volumen de compra y venta.
+    Weights at the start of each close-to-close interval.
+    Uninvested capital stays in cash without earning interest.
+    Approximate costs based on buying and selling turnover.
     """
     asset_returns = (
         prices / prices.shift(1) - 1
@@ -224,7 +224,7 @@ def simulate(prices, target_weights, cost_rate=0.001):
 
         gross_return = np.dot(desired, returns_today)
 
-        # Primero descontamos costos y después aplicamos el rendimiento.
+        # Deduct costs first, then apply the return.
         net_return = (1 - cost) * (1 + gross_return) - 1
 
         daily_results.append({
@@ -234,7 +234,7 @@ def simulate(prices, target_weights, cost_rate=0.001):
             "cost_fraction": cost
         })
 
-        # Pesos después del movimiento del mercado.
+        # Weights after the market move.
         previous_weights = (
             desired * (1 + returns_today) / (1 + gross_return)
         )
@@ -242,7 +242,7 @@ def simulate(prices, target_weights, cost_rate=0.001):
     result = pd.DataFrame(daily_results).set_index("Date")
     result["equity"] = (1 + result["net_return"]).cumprod()
 
-    # Incluye el capital inicial de 1 en el máximo histórico.
+    # Include the initial capital of 1 in the running peak.
     high_water = result["equity"].cummax().clip(lower=1)
     result["drawdown"] = result["equity"] / high_water - 1
 
@@ -273,7 +273,7 @@ def run_project(prices, output_dir="results"):
     prices = prices.reindex(columns=TICKERS).sort_index()
 
     if prices.isna().any().any() or prices.index.duplicated().any():
-        raise ValueError("Revisar faltantes o fechas duplicadas.")
+        raise ValueError("Check missing prices or duplicate dates.")
 
     data, features = prepare_data(prices)
 
@@ -288,12 +288,12 @@ def run_project(prices, output_dir="results"):
         index="Date", columns="Ticker", values="probability_up"
     ).reindex(index=prices.index, columns=TICKERS)
 
-    # Umbral fijo del proyecto, no optimizado con test.
-    # Cada ETF puede ocupar 1/8 del capital.
+    # Fixed project threshold, not optimized on test data.
+    # Each ETF can use 1/8 of the capital.
     signal_weights = probabilities.ge(0.55).astype(float) / len(TICKERS)
 
-    # Señal de t ejecutada al cierre de t+1:
-    # obtiene el rendimiento que termina en t+2.
+    # Signal from t, executed at the close of t+1:
+    # earns the return ending at t+2.
     executed_weights = signal_weights.shift(2).fillna(0)
 
     first_signal_date = signals["Date"].min()
@@ -320,8 +320,8 @@ def run_project(prices, output_dir="results"):
         model.feature_importances_, index=features
     ).sort_values(ascending=False)
 
-    # El modelo se entrenó con datos anteriores a 2023.
-    # Estas son probabilidades de investigación, no órdenes reales.
+    # The model was trained on data available before 2023.
+    # Research probabilities, not live trading orders.
     latest = signals[
         signals["Date"] == signals["Date"].max()
     ][["Date", "Ticker", "probability_up"]].copy()
@@ -340,10 +340,10 @@ def run_project(prices, output_dir="results"):
     benchmark.to_csv(folder / "benchmark_history.csv")
 
     fig, ax = plt.subplots(figsize=(12, 5))
-    strategy["equity"].plot(ax=ax, label="Estrategia del modelo")
-    benchmark["equity"].plot(ax=ax, label="Pesos iguales diarios")
-    ax.set_title("Evaluación fuera de muestra")
-    ax.set_ylabel("Capital relativo")
+    strategy["equity"].plot(ax=ax, label="Model strategy")
+    benchmark["equity"].plot(ax=ax, label="Daily equal weight")
+    ax.set_title("Out-of-sample evaluation")
+    ax.set_ylabel("Relative capital")
     ax.grid(alpha=0.3)
     ax.legend()
     fig.tight_layout()
@@ -364,19 +364,19 @@ def run_project(prices, output_dir="results"):
 
 
 def extra_checks(prices, data, features, signals, folder):
-    # Reviso la disponibilidad antes de interpretar las gráficas.
+    # Check data availability before interpreting the plots.
     availability = pd.DataFrame({
-        "observaciones": prices.count(),
-        "faltantes": prices.isna().sum(),
-        "primera_fecha": prices.apply(lambda x: x.first_valid_index()),
-        "ultima_fecha": prices.apply(lambda x: x.last_valid_index())
+        "observations": prices.count(),
+        "missing": prices.isna().sum(),
+        "first_date": prices.apply(lambda x: x.first_valid_index()),
+        "last_date": prices.apply(lambda x: x.last_valid_index())
     })
     availability.to_csv(folder / "data_availability.csv")
     returns = (prices / prices.shift(1) - 1).iloc[1:]
     returns.corr().to_csv(folder / "return_correlations.csv")
     returns.describe().to_csv(folder / "return_summary.csv")
 
-    # Para la exploración del objetivo uso solamente el desarrollo.
+    # Explore the target using development data only.
     development = data[
         (data["Date"] < "2023-01-01")
         & (data["label_end"] < "2023-01-01")
@@ -388,8 +388,8 @@ def extra_checks(prices, data, features, signals, folder):
         folder / "feature_target_correlations_development.csv"
     )
 
-    # Simulación vectorizada, como primer ejercicio del módulo 4.
-    # Cada fila supone una operación independiente de 100 USD.
+    # Vectorized simulation, following the first exercise in Module 4.
+    # Each row represents an independent USD 100 trade.
     trades = signals.dropna(subset=["future_return"]).copy()
     trades["selected"] = (trades["probability_up"] >= 0.55).astype(int)
     trades["gross_profit_usd"] = trades["selected"] * 100 * trades["future_return"]
@@ -398,7 +398,7 @@ def extra_checks(prices, data, features, signals, folder):
     trades[["Date", "Ticker", "future_return", "selected", "gross_profit_usd", "fees_usd", "net_profit_usd"]].to_csv(
         folder / "independent_trade_simulation.csv", index=False
     )
-    # Este total no es un rendimiento de portafolio: no fija el capital disponible.
+    # This total is not a portfolio return: available capital is not constrained.
     pd.DataFrame([{
         "selected_trades": int(trades["selected"].sum()),
         "gross_profit_usd": trades["gross_profit_usd"].sum(),
@@ -408,7 +408,7 @@ def extra_checks(prices, data, features, signals, folder):
 
     fig, ax = plt.subplots(figsize=(11, 5))
     (prices / prices.iloc[0] * 100).plot(ax=ax)
-    ax.set(title="Evolución histórica: inicio = 100", ylabel="Valor relativo")
+    ax.set(title="Historical performance: initial value = 100", ylabel="Relative value")
     ax.grid(alpha=0.25)
     fig.tight_layout()
     fig.savefig(folder / "normalized_prices.png", dpi=150)
@@ -422,17 +422,17 @@ def extra_checks(prices, data, features, signals, folder):
     for i in range(len(corr)):
         for j in range(len(corr)):
             ax.text(j, i, f"{corr.iloc[i,j]:.2f}", ha="center", va="center", fontsize=8)
-    ax.set_title("Correlación de rendimientos diarios: descriptivo 2010–2025")
+    ax.set_title("Daily return correlations: descriptive, 2010–2025")
     fig.colorbar(im, ax=ax)
     fig.tight_layout()
     fig.savefig(folder / "correlations.png", dpi=150)
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(11, 4))
-    for filename, label in [("strategy_history.csv", "Modelo"), ("benchmark_history.csv", "Pesos iguales")]:
+    for filename, label in [("strategy_history.csv", "Model"), ("benchmark_history.csv", "Equal weight")]:
         history = pd.read_csv(folder / filename, index_col=0, parse_dates=True)
         (history["drawdown"] * 100).plot(ax=ax, label=label)
-    ax.set(title="Caídas desde máximos: periodo de prueba", ylabel="Caída (%)")
+    ax.set(title="Drawdowns during the test period", ylabel="Drawdown (%)")
     ax.grid(alpha=0.25)
     ax.legend()
     fig.tight_layout()
@@ -444,8 +444,8 @@ if __name__ == "__main__":
     prices = download_prices()
     results = run_project(prices)
 
-    print("Tamaños de los conjuntos:", results["split_sizes"])
-    print("\nValidación:\n", results["validation"])
+    print("Split sizes:", results["split_sizes"])
+    print("\nValidation:\n", results["validation"])
     print("\nTest:\n", results["test"])
-    print("\nPortafolios:\n", results["metrics"])
-    print("\nSeñales más recientes:\n", results["latest"])
+    print("\nPortfolios:\n", results["metrics"])
+    print("\nLatest historical signals:\n", results["latest"])

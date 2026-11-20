@@ -1,25 +1,26 @@
-# Resultados del proyecto
+# Project results
 
-## Lo que encontré
+## What I found
 
-El árbol fue el modelo elegido en validación. En test tuvo una accuracy de 54.25%, frente a 53.90% al predecir siempre una subida. La diferencia fue de 0.35 puntos porcentuales. Es una diferencia pequeña. No hice una prueba estadística para saber si se sostiene más allá de esta muestra. Además, las observaciones de varios ETFs en una misma fecha no son independientes.
+The decision tree was selected on validation. Its test accuracy was 54.25%, compared with 53.90% for always predicting a positive return. That is a difference of 0.35 percentage points. The gap is small. I did not run a statistical significance test to establish whether it holds beyond this sample. Observations from different ETFs on the same date are also not independent.
 
-| Indicador | Modelo | Pesos iguales diarios |
+| Metric | Model strategy | Daily equal weight |
 |---|---:|---:|
-| Rendimiento acumulado | 2.09% | 58.95% |
-| Rendimiento anual compuesto | 0.70% | 16.85% |
-| Volatilidad anualizada | 1.56% | 10.98% |
-| Caída máxima | -2.38% | -10.93% |
-| Sharpe (tasa 0 %) | 0.453 | 1.473 |
+| Total return | 2.09% | 58.95% |
+| Compound annual growth rate | 0.70% | 16.85% |
+| Annualized volatility | 1.56% | 10.98% |
+| Maximum drawdown | -2.38% | -10.93% |
+| Sharpe (risk-free rate = 0%) | 0.453 | 1.473 |
 
-En esta simulación, seleccionar ETFs con el modelo no mejoró el rendimiento frente a repartir el capital por igual. La estrategia ganó 2.09%, mientras que la referencia ganó 58.95%. El Sharpe también fue menor.
 
-La estrategia presentó una caída máxima menor, pero también invirtió menos capital porque dejaba posiciones en efectivo cuando no había señal. Por eso no puedo atribuir esa diferencia solamente a una mejor selección de activos. Para separar esos efectos habría que comparar portafolios con una proporción invertida similar.
+Selecting ETFs with the model did not improve returns in this simulation. The strategy gained 2.09%, while the equal-weight benchmark gained 58.95%. The strategy also had a lower Sharpe ratio.
 
-Lo que más me llamó la atención es que acertar un poco más no se tradujo en ganar más. También importan cuánto se gana o pierde en cada operación, los costos y cuánto capital permanece invertido.
+Its maximum drawdown was smaller, but it also invested less capital because allocations stayed in cash when there was no signal. I cannot attribute the smaller drawdown only to better ETF selection. A comparison with similar invested exposure would help separate these effects.
 
-Dejé los parámetros como estaban antes de revisar test. Si continúo con otras variables o con una frecuencia distinta de rebalanceo, necesitaré otro periodo de evaluación para no elegir las reglas que mejor se acomoden a estos resultados.
+What stood out to me was that getting slightly more predictions right did not lead to making more money. The size of each gain and loss, trading costs, and the amount of capital left in cash also matter.
 
-![Capital](results/equity_comparison.png)
+I kept the parameters fixed after looking at test results. If I continue with other features or a different rebalancing frequency, I will need another evaluation period rather than choosing rules that fit these test results.
 
-![Caídas](results/drawdown_comparison.png)
+![Portfolio value](results/equity_comparison.png)
+
+![Drawdowns](results/drawdown_comparison.png)
